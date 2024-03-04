@@ -1,6 +1,7 @@
 package viacep
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -39,7 +40,12 @@ func BuscaCep(zipcode string) (*ViaCEP, *erro.Erro) {
 		return nil, erro.New(http.StatusBadRequest, "invalid zipcode")
 	}
 
-	resp, err := http.Get(fmt.Sprintf("https://viacep.com.br/ws/%s/json/", url.QueryEscape(zipcode)))
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	resp, err := client.Get(fmt.Sprintf("https://viacep.com.br/ws/%s/json/", url.QueryEscape(zipcode)))
 	if err != nil {
 		return nil, erro.New(http.StatusBadRequest, err.Error())
 	}

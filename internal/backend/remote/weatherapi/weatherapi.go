@@ -1,6 +1,7 @@
 package weatherapi
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -60,7 +61,10 @@ type WeatherAPIResult struct {
 func GetWeather(name string, apiKey string) (*WeatherAPIResult, *erro.Erro) {
 	url := "https://api.weatherapi.com/v1/current.json?key=" + apiKey + "&q=" + url.QueryEscape(name) + "&aqi=no"
 
-	client := &http.Client{}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, erro.New(http.StatusBadRequest, err.Error())
