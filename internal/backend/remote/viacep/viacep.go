@@ -27,7 +27,7 @@ type ViaCEP struct {
 }
 
 type ErroViaCEP struct {
-	Erro string `json:"erro"`
+	Erro bool `json:"erro"`
 }
 
 const INVALID_ZIPCODE_MSG = "invalid zipcode"
@@ -40,7 +40,7 @@ func BuscaCep(zipcode string) (*ViaCEP, *erro.Erro) {
 
 	zipcode, err := util.FormatZipCode(zipcode)
 	if err != nil {
-		return nil, erro.New(http.StatusBadRequest, INVALID_ZIPCODE_MSG)
+		return nil, erro.New(http.StatusUnprocessableEntity, INVALID_ZIPCODE_MSG)
 	}
 
 	tr := &http.Transport{
@@ -62,22 +62,23 @@ func BuscaCep(zipcode string) (*ViaCEP, *erro.Erro) {
 			return nil, erro.New(http.StatusInternalServerError, err.Error())
 		}
 
-		var data ViaCEP
-		err = json.Unmarshal(body, &data)
-		if err == nil {
-			if data.Localidade != "" {
-				return &data, nil
-			} else {
-				return nil, erro.New(http.StatusNotFound, CANNOT_FIND_ZIPCODE_MSG)
-			}
+		var erroViaCep ErroViaCEP // se for codigo de erro da API (pode ser 200 e erro == true)
+		err = json.Unmarshal(body, &erroViaCep)
+		if err != nil {
+			return nil, erro.New(http.StatusInternalServerError, err.Error())
+		} else if erroViaCep.Erro {
+			return nil, erro.New(http.StatusNotFound, CANNOT_FIND_ZIPCODE_MSG)
 		} else {
-			var erroViaCep ErroViaCEP // se for codigo de erro da API (pode ser 200 e erro == true)
-			err = json.Unmarshal(body, &erroViaCep)
-			if err != nil {
-				return nil, erro.New(http.StatusInternalServerError, err.Error())
-			} else {
-				return nil, erro.New(http.StatusUnprocessableEntity, INVALID_ZIPCODE_MSG)
+			var data ViaCEP
+			err = json.Unmarshal(body, &data)
+			if err == nil {
+				if data.Localidade != "" {
+					return &data, nil
+				} else {
+					return nil, erro.New(http.StatusUnprocessableEntity, INVALID_ZIPCODE_MSG)
+				}
 			}
+			return nil, erro.New(http.StatusInternalServerError, err.Error())
 		}
 	} else if resp.StatusCode == 404 {
 		return nil, erro.New(http.StatusNotFound, CANNOT_FIND_ZIPCODE_MSG)

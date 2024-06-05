@@ -20,7 +20,7 @@ func TestGetCep(t *testing.T) {
 
 	data, err = BuscaCep("sadasdas")
 	assert.Nil(t, data)
-	assert.Equal(t, err.Status, http.StatusBadRequest)
+	assert.Equal(t, err.Status, http.StatusUnprocessableEntity)
 	assert.Equal(t, err.Message, "invalid zipcode")
 
 	data, err = BuscaCep("01153001")
